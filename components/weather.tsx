@@ -201,11 +201,9 @@ function n(num: number): number {
   return Math.ceil(num);
 }
 
-export function Weather({
-  weatherAtLocation = SAMPLE,
-}: {
-  weatherAtLocation?: WeatherAtLocation;
-}) {
+export function Weather({ weatherAtLocation = SAMPLE, }: { weatherAtLocation?: WeatherAtLocation; }) {
+
+  
   const currentHigh = Math.max(
     ...weatherAtLocation.hourly.temperature_2m.slice(0, 24),
   );

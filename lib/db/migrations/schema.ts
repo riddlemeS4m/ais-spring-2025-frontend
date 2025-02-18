@@ -109,3 +109,25 @@ export const document = pgTable("Document", {
 		documentIdCreatedAtPk: primaryKey({ columns: [table.id, table.createdAt], name: "Document_id_createdAt_pk"}),
 	}
 });
+
+export const ticket = pgTable("Ticket", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	createdAt: timestamp({ mode: 'string' }).notNull(),
+	jiraTicketId: text(),
+	userQuery: text().notNull(),
+	severity: text().default('low'),
+	assignedTo: text(),
+	escalationTime: text(),
+	resolved: boolean().default(false),
+	userId: uuid().notNull(),
+},
+(table) => {
+	return {
+		ticketUserIdUserIdFk: foreignKey({
+			columns: [table.userId],
+			foreignColumns: [user.id],
+			name: "Ticket_userId_User_id_fk"
+		}),
+	}
+});
+

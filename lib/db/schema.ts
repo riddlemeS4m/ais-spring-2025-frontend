@@ -103,13 +103,20 @@ export const suggestion = pgTable(
       .references(() => user.id),
     createdAt: timestamp('createdAt').notNull(),
   },
-  (table) => ({
-    pk: primaryKey({ columns: [table.id] }),
-    documentRef: foreignKey({
-      columns: [table.documentId, table.documentCreatedAt],
-      foreignColumns: [document.id, document.createdAt],
-    }),
-  }),
 );
 
 export type Suggestion = InferSelectModel<typeof suggestion>;
+
+export const ticket = pgTable("Ticket", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+  jiraTicketId: text(),
+	createdAt: timestamp({ mode: 'string' }).notNull(),
+	userQuery: text().notNull(),
+	severity: text().default('low'),
+	assignedTo: text(),
+	escalationTime: text(),
+	resolved: boolean().default(false),
+	userId: uuid().notNull(),
+}
+);
+export type Ticket = InferSelectModel<typeof ticket>;

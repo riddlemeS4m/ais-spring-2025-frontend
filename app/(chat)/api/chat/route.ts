@@ -37,20 +37,24 @@ import { generateTitleFromUserMessage } from '../../actions';
 export const maxDuration = 60;
 
 type AllowedTools =
-  | 'createDocument'
-  | 'updateDocument'
-  | 'requestSuggestions'
-  | 'getWeather';
+  // | 'createDocument'
+  // | 'updateDocument'
+  // | 'requestSuggestions'
+  | 'getWeather'
+  | 'getPokemon'
+  | 'getInformationAboutIssueAndMakeTicket';
 
-const blocksTools: AllowedTools[] = [
-  'createDocument',
-  'updateDocument',
-  'requestSuggestions',
-];
+// const blocksTools: AllowedTools[] = [
+//   'createDocument',
+//   'updateDocument',
+//   'requestSuggestions',
+// ];
 
 const weatherTools: AllowedTools[] = ['getWeather'];
+const pokemonTools: AllowedTools[] = ['getPokemon']
+const serverTools: AllowedTools[] = ['getInformationAboutIssueAndMakeTicket']
 
-const allTools: AllowedTools[] = [...blocksTools, ...weatherTools];
+const allTools: AllowedTools[] = [...weatherTools, ...pokemonTools, ...serverTools];
 
 export async function POST(request: Request) {
   const {
@@ -108,6 +112,48 @@ export async function POST(request: Request) {
         maxSteps: 5,
         experimental_activeTools: allTools,
         tools: {
+          getPokemon: {
+            description: 'Get information about a specific Pokemon',
+            parameters: z.object({
+              name: z.string(),
+            }),
+            execute: async ({ name }) => {
+              const response = await fetch(
+                `https://pokeapi.co/api/v2/pokemon/${name}`
+              );
+              
+              if (!response.ok) {
+                return { error: 'Pokemon not found' };
+              }
+              
+              const pokemonData = await response.json();
+              console.log('made it past response.json');
+              console.log(pokemonData)
+              return pokemonData
+            },
+          },
+          getInformationAboutIssueAndMakeTicket:{
+            description: 'Help figure out the technical IT problem, such as a server being down, or a CRM issue',
+            parameters: z.object({
+              question: z.string().describe('the problem that is occurring,'),
+            }),
+            execute: async ({ question }) => {
+              console.log(question)
+              const response = await fetch(
+                `${process.env.PYTHON_BASE_URL}/jira/ticket`,{
+
+                  body: JSON.stringify({userQuery: question, id: session.user?.id})
+                }
+              );
+              
+              if (!response.ok) {
+                return { error: 'Pokemon not found' };
+              }
+              
+              const pokemonData = await response.json();
+              return pokemonData
+            },
+          },
           getWeather: {
             description: 'Get the current weather at a location',
             parameters: z.object({
@@ -123,322 +169,322 @@ export async function POST(request: Request) {
               return weatherData;
             },
           },
-          createDocument: {
-            description:
-              'Create a document for a writing or content creation activities like image generation. This tool will call other functions that will generate the contents of the document based on the title and kind.',
-            parameters: z.object({
-              title: z.string(),
-              kind: z.enum(['text', 'code', 'image']),
-            }),
-            execute: async ({ title, kind }) => {
-              const id = generateUUID();
-              let draftText = '';
+          // createDocument: {
+          //   description:
+          //     'Create a document for a writing or content creation activities like image generation. This tool will call other functions that will generate the contents of the document based on the title and kind.',
+          //   parameters: z.object({
+          //     title: z.string(),
+          //     kind: z.enum(['text', 'code', 'image']),
+          //   }),
+          //   execute: async ({ title, kind }) => {
+          //     const id = generateUUID();
+          //     let draftText = '';
 
-              dataStream.writeData({
-                type: 'id',
-                content: id,
-              });
+          //     dataStream.writeData({
+          //       type: 'id',
+          //       content: id,
+          //     });
 
-              dataStream.writeData({
-                type: 'title',
-                content: title,
-              });
+          //     dataStream.writeData({
+          //       type: 'title',
+          //       content: title,
+          //     });
 
-              dataStream.writeData({
-                type: 'kind',
-                content: kind,
-              });
+          //     dataStream.writeData({
+          //       type: 'kind',
+          //       content: kind,
+          //     });
 
-              dataStream.writeData({
-                type: 'clear',
-                content: '',
-              });
+          //     dataStream.writeData({
+          //       type: 'clear',
+          //       content: '',
+          //     });
 
-              if (kind === 'text') {
-                const { fullStream } = streamText({
-                  model: customModel(model.apiIdentifier),
-                  system:
-                    'Write about the given topic. Markdown is supported. Use headings wherever appropriate.',
-                  prompt: title,
-                });
+          //     if (kind === 'text') {
+          //       const { fullStream } = streamText({
+          //         model: customModel(model.apiIdentifier),
+          //         system:
+          //           'Write about the given topic. Markdown is supported. Use headings wherever appropriate.',
+          //         prompt: title,
+          //       });
 
-                for await (const delta of fullStream) {
-                  const { type } = delta;
+          //       for await (const delta of fullStream) {
+          //         const { type } = delta;
 
-                  if (type === 'text-delta') {
-                    const { textDelta } = delta;
+          //         if (type === 'text-delta') {
+          //           const { textDelta } = delta;
 
-                    draftText += textDelta;
-                    dataStream.writeData({
-                      type: 'text-delta',
-                      content: textDelta,
-                    });
-                  }
-                }
+          //           draftText += textDelta;
+          //           dataStream.writeData({
+          //             type: 'text-delta',
+          //             content: textDelta,
+          //           });
+          //         }
+          //       }
 
-                dataStream.writeData({ type: 'finish', content: '' });
-              } else if (kind === 'code') {
-                const { fullStream } = streamObject({
-                  model: customModel(model.apiIdentifier),
-                  system: codePrompt,
-                  prompt: title,
-                  schema: z.object({
-                    code: z.string(),
-                  }),
-                });
+          //       dataStream.writeData({ type: 'finish', content: '' });
+          //     } else if (kind === 'code') {
+          //       const { fullStream } = streamObject({
+          //         model: customModel(model.apiIdentifier),
+          //         system: codePrompt,
+          //         prompt: title,
+          //         schema: z.object({
+          //           code: z.string(),
+          //         }),
+          //       });
 
-                for await (const delta of fullStream) {
-                  const { type } = delta;
+          //       for await (const delta of fullStream) {
+          //         const { type } = delta;
 
-                  if (type === 'object') {
-                    const { object } = delta;
-                    const { code } = object;
+          //         if (type === 'object') {
+          //           const { object } = delta;
+          //           const { code } = object;
 
-                    if (code) {
-                      dataStream.writeData({
-                        type: 'code-delta',
-                        content: code ?? '',
-                      });
+          //           if (code) {
+          //             dataStream.writeData({
+          //               type: 'code-delta',
+          //               content: code ?? '',
+          //             });
 
-                      draftText = code;
-                    }
-                  }
-                }
+          //             draftText = code;
+          //           }
+          //         }
+          //       }
 
-                dataStream.writeData({ type: 'finish', content: '' });
-              } else if (kind === 'image') {
-                const { image } = await experimental_generateImage({
-                  model: imageGenerationModel,
-                  prompt: title,
-                  n: 1,
-                });
+          //       dataStream.writeData({ type: 'finish', content: '' });
+          //     } else if (kind === 'image') {
+          //       const { image } = await experimental_generateImage({
+          //         model: imageGenerationModel,
+          //         prompt: title,
+          //         n: 1,
+          //       });
 
-                draftText = image.base64;
+          //       draftText = image.base64;
 
-                dataStream.writeData({
-                  type: 'image-delta',
-                  content: image.base64,
-                });
+          //       dataStream.writeData({
+          //         type: 'image-delta',
+          //         content: image.base64,
+          //       });
 
-                dataStream.writeData({ type: 'finish', content: '' });
-              }
+          //       dataStream.writeData({ type: 'finish', content: '' });
+          //     }
 
-              if (session.user?.id) {
-                await saveDocument({
-                  id,
-                  title,
-                  kind,
-                  content: draftText,
-                  userId: session.user.id,
-                });
-              }
+          //     if (session.user?.id) {
+          //       await saveDocument({
+          //         id,
+          //         title,
+          //         kind,
+          //         content: draftText,
+          //         userId: session.user.id,
+          //       });
+          //     }
 
-              return {
-                id,
-                title,
-                kind,
-                content:
-                  'A document was created and is now visible to the user.',
-              };
-            },
-          },
-          updateDocument: {
-            description: 'Update a document with the given description.',
-            parameters: z.object({
-              id: z.string().describe('The ID of the document to update'),
-              description: z
-                .string()
-                .describe('The description of changes that need to be made'),
-            }),
-            execute: async ({ id, description }) => {
-              const document = await getDocumentById({ id });
+          //     return {
+          //       id,
+          //       title,
+          //       kind,
+          //       content:
+          //         'A document was created and is now visible to the user.',
+          //     };
+          //   },
+          // },
+          // updateDocument: {
+          //   description: 'Update a document with the given description.',
+          //   parameters: z.object({
+          //     id: z.string().describe('The ID of the document to update'),
+          //     description: z
+          //       .string()
+          //       .describe('The description of changes that need to be made'),
+          //   }),
+          //   execute: async ({ id, description }) => {
+          //     const document = await getDocumentById({ id });
 
-              if (!document) {
-                return {
-                  error: 'Document not found',
-                };
-              }
+          //     if (!document) {
+          //       return {
+          //         error: 'Document not found',
+          //       };
+          //     }
 
-              const { content: currentContent } = document;
-              let draftText = '';
+          //     const { content: currentContent } = document;
+          //     let draftText = '';
 
-              dataStream.writeData({
-                type: 'clear',
-                content: document.title,
-              });
+          //     dataStream.writeData({
+          //       type: 'clear',
+          //       content: document.title,
+          //     });
 
-              if (document.kind === 'text') {
-                const { fullStream } = streamText({
-                  model: customModel(model.apiIdentifier),
-                  system: updateDocumentPrompt(currentContent, 'text'),
-                  prompt: description,
-                  experimental_providerMetadata: {
-                    openai: {
-                      prediction: {
-                        type: 'content',
-                        content: currentContent,
-                      },
-                    },
-                  },
-                });
+          //     if (document.kind === 'text') {
+          //       const { fullStream } = streamText({
+          //         model: customModel(model.apiIdentifier),
+          //         system: updateDocumentPrompt(currentContent, 'text'),
+          //         prompt: description,
+          //         experimental_providerMetadata: {
+          //           openai: {
+          //             prediction: {
+          //               type: 'content',
+          //               content: currentContent,
+          //             },
+          //           },
+          //         },
+          //       });
 
-                for await (const delta of fullStream) {
-                  const { type } = delta;
+          //       for await (const delta of fullStream) {
+          //         const { type } = delta;
 
-                  if (type === 'text-delta') {
-                    const { textDelta } = delta;
+          //         if (type === 'text-delta') {
+          //           const { textDelta } = delta;
 
-                    draftText += textDelta;
-                    dataStream.writeData({
-                      type: 'text-delta',
-                      content: textDelta,
-                    });
-                  }
-                }
+          //           draftText += textDelta;
+          //           dataStream.writeData({
+          //             type: 'text-delta',
+          //             content: textDelta,
+          //           });
+          //         }
+          //       }
 
-                dataStream.writeData({ type: 'finish', content: '' });
-              } else if (document.kind === 'code') {
-                const { fullStream } = streamObject({
-                  model: customModel(model.apiIdentifier),
-                  system: updateDocumentPrompt(currentContent, 'code'),
-                  prompt: description,
-                  schema: z.object({
-                    code: z.string(),
-                  }),
-                });
+          //       dataStream.writeData({ type: 'finish', content: '' });
+          //     } else if (document.kind === 'code') {
+          //       const { fullStream } = streamObject({
+          //         model: customModel(model.apiIdentifier),
+          //         system: updateDocumentPrompt(currentContent, 'code'),
+          //         prompt: description,
+          //         schema: z.object({
+          //           code: z.string(),
+          //         }),
+          //       });
 
-                for await (const delta of fullStream) {
-                  const { type } = delta;
+          //       for await (const delta of fullStream) {
+          //         const { type } = delta;
 
-                  if (type === 'object') {
-                    const { object } = delta;
-                    const { code } = object;
+          //         if (type === 'object') {
+          //           const { object } = delta;
+          //           const { code } = object;
 
-                    if (code) {
-                      dataStream.writeData({
-                        type: 'code-delta',
-                        content: code ?? '',
-                      });
+          //           if (code) {
+          //             dataStream.writeData({
+          //               type: 'code-delta',
+          //               content: code ?? '',
+          //             });
 
-                      draftText = code;
-                    }
-                  }
-                }
+          //             draftText = code;
+          //           }
+          //         }
+          //       }
 
-                dataStream.writeData({ type: 'finish', content: '' });
-              } else if (document.kind === 'image') {
-                const { image } = await experimental_generateImage({
-                  model: imageGenerationModel,
-                  prompt: description,
-                  n: 1,
-                });
+          //       dataStream.writeData({ type: 'finish', content: '' });
+          //     } else if (document.kind === 'image') {
+          //       const { image } = await experimental_generateImage({
+          //         model: imageGenerationModel,
+          //         prompt: description,
+          //         n: 1,
+          //       });
 
-                draftText = image.base64;
+          //       draftText = image.base64;
 
-                dataStream.writeData({
-                  type: 'image-delta',
-                  content: image.base64,
-                });
+          //       dataStream.writeData({
+          //         type: 'image-delta',
+          //         content: image.base64,
+          //       });
 
-                dataStream.writeData({ type: 'finish', content: '' });
-              }
+          //       dataStream.writeData({ type: 'finish', content: '' });
+          //     }
 
-              if (session.user?.id) {
-                await saveDocument({
-                  id,
-                  title: document.title,
-                  content: draftText,
-                  kind: document.kind,
-                  userId: session.user.id,
-                });
-              }
+          //     if (session.user?.id) {
+          //       await saveDocument({
+          //         id,
+          //         title: document.title,
+          //         content: draftText,
+          //         kind: document.kind,
+          //         userId: session.user.id,
+          //       });
+          //     }
 
-              return {
-                id,
-                title: document.title,
-                kind: document.kind,
-                content: 'The document has been updated successfully.',
-              };
-            },
-          },
-          requestSuggestions: {
-            description: 'Request suggestions for a document',
-            parameters: z.object({
-              documentId: z
-                .string()
-                .describe('The ID of the document to request edits'),
-            }),
-            execute: async ({ documentId }) => {
-              const document = await getDocumentById({ id: documentId });
+          //     return {
+          //       id,
+          //       title: document.title,
+          //       kind: document.kind,
+          //       content: 'The document has been updated successfully.',
+          //     };
+          //   },
+          // },
+          // requestSuggestions: {
+          //   description: 'Request suggestions for a document',
+          //   parameters: z.object({
+          //     documentId: z
+          //       .string()
+          //       .describe('The ID of the document to request edits'),
+          //   }),
+          //   execute: async ({ documentId }) => {
+          //     const document = await getDocumentById({ id: documentId });
 
-              if (!document || !document.content) {
-                return {
-                  error: 'Document not found',
-                };
-              }
+          //     if (!document || !document.content) {
+          //       return {
+          //         error: 'Document not found',
+          //       };
+          //     }
 
-              const suggestions: Array<
-                Omit<Suggestion, 'userId' | 'createdAt' | 'documentCreatedAt'>
-              > = [];
+          //     const suggestions: Array<
+          //       Omit<Suggestion, 'userId' | 'createdAt' | 'documentCreatedAt'>
+          //     > = [];
 
-              const { elementStream } = streamObject({
-                model: customModel(model.apiIdentifier),
-                system:
-                  'You are a help writing assistant. Given a piece of writing, please offer suggestions to improve the piece of writing and describe the change. It is very important for the edits to contain full sentences instead of just words. Max 5 suggestions.',
-                prompt: document.content,
-                output: 'array',
-                schema: z.object({
-                  originalSentence: z
-                    .string()
-                    .describe('The original sentence'),
-                  suggestedSentence: z
-                    .string()
-                    .describe('The suggested sentence'),
-                  description: z
-                    .string()
-                    .describe('The description of the suggestion'),
-                }),
-              });
+          //     const { elementStream } = streamObject({
+          //       model: customModel(model.apiIdentifier),
+          //       system:
+          //         'You are a help writing assistant. Given a piece of writing, please offer suggestions to improve the piece of writing and describe the change. It is very important for the edits to contain full sentences instead of just words. Max 5 suggestions.',
+          //       prompt: document.content,
+          //       output: 'array',
+          //       schema: z.object({
+          //         originalSentence: z
+          //           .string()
+          //           .describe('The original sentence'),
+          //         suggestedSentence: z
+          //           .string()
+          //           .describe('The suggested sentence'),
+          //         description: z
+          //           .string()
+          //           .describe('The description of the suggestion'),
+          //       }),
+          //     });
 
-              for await (const element of elementStream) {
-                const suggestion = {
-                  originalText: element.originalSentence,
-                  suggestedText: element.suggestedSentence,
-                  description: element.description,
-                  id: generateUUID(),
-                  documentId: documentId,
-                  isResolved: false,
-                };
+          //     for await (const element of elementStream) {
+          //       const suggestion = {
+          //         originalText: element.originalSentence,
+          //         suggestedText: element.suggestedSentence,
+          //         description: element.description,
+          //         id: generateUUID(),
+          //         documentId: documentId,
+          //         isResolved: false,
+          //       };
 
-                dataStream.writeData({
-                  type: 'suggestion',
-                  content: suggestion,
-                });
+          //       dataStream.writeData({
+          //         type: 'suggestion',
+          //         content: suggestion,
+          //       });
 
-                suggestions.push(suggestion);
-              }
+          //       suggestions.push(suggestion);
+          //     }
 
-              if (session.user?.id) {
-                const userId = session.user.id;
+          //     if (session.user?.id) {
+          //       const userId = session.user.id;
 
-                await saveSuggestions({
-                  suggestions: suggestions.map((suggestion) => ({
-                    ...suggestion,
-                    userId,
-                    createdAt: new Date(),
-                    documentCreatedAt: document.createdAt,
-                  })),
-                });
-              }
+          //       await saveSuggestions({
+          //         suggestions: suggestions.map((suggestion) => ({
+          //           ...suggestion,
+          //           userId,
+          //           createdAt: new Date(),
+          //           documentCreatedAt: document.createdAt,
+          //         })),
+          //       });
+          //     }
 
-              return {
-                id: documentId,
-                title: document.title,
-                kind: document.kind,
-                message: 'Suggestions have been added to the document',
-              };
-            },
-          },
+          //     return {
+          //       id: documentId,
+          //       title: document.title,
+          //       kind: document.kind,
+          //       message: 'Suggestions have been added to the document',
+          //     };
+          //   },
+          // },
         },
         onFinish: async ({ response }) => {
           if (session.user?.id) {

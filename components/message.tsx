@@ -19,6 +19,7 @@ import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
+import { PokemonCard } from './pokemon';
 
 const PurePreviewMessage = ({
   chatId,
@@ -136,7 +137,9 @@ const PurePreviewMessage = ({
                       <div key={toolCallId}>
                         {toolName === 'getWeather' ? (
                           <Weather weatherAtLocation={result} />
-                        ) : toolName === 'createDocument' ? (
+                        ) : toolName === 'getPokemon' ? (
+                          <PokemonCard pokemonInfo={result} />
+                        ) :toolName === 'createDocument' ? (
                           <DocumentPreview
                             isReadonly={isReadonly}
                             result={result}
@@ -166,9 +169,14 @@ const PurePreviewMessage = ({
                         skeleton: ['getWeather'].includes(toolName),
                       })}
                     >
-                      {toolName === 'getWeather' ? (
+                      { toolName === 'getWeather' ? (
                         <Weather />
-                      ) : toolName === 'createDocument' ? (
+                      ) :
+                      toolName === 'getPokemon' ? (
+                        <PokemonCard pokemonInfo={''}/>
+                      ) :
+                       toolName === 'createDocument' ? (
+                        
                         <DocumentPreview isReadonly={isReadonly} args={args} />
                       ) : toolName === 'updateDocument' ? (
                         <DocumentToolCall
