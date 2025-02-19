@@ -50,6 +50,13 @@
       "when": 1739991744279,
       "tag": "0006_flat_reavers",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1740001525902,
+      "tag": "0007_plain_alice",
+      "breakpoints": true
     }
   ]
 }

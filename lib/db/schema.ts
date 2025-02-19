@@ -118,15 +118,22 @@ export const ticket = pgTable("Ticket", {
 
 export type Ticket = InferSelectModel<typeof ticket>;
 
+export const action = pgTable("Action", {
+  id: uuid().primaryKey().notNull().defaultRandom(),
+  name: text().notNull(),
+  description: text(),
+  connection: text().notNull(),
+  command: text()
+})
+
+export type Action = InferSelectModel<typeof action>;
+
 export const history = pgTable("History", {
   id: uuid().primaryKey().notNull().defaultRandom(),
-  userId: uuid().notNull().references(() => user.id),
   ticketId: uuid().references(() => ticket.id),
   chatId: uuid().notNull().references(() => chat.id),
   executedAt: timestamp({ mode: "string" }).defaultNow().notNull(),
-  action: varchar("text", { enum: ["NO ACTION", "HEALTH CHECK", "DISK USAGE", "RESTART SERVER"] })
-    .notNull()
-    .default("NO ACTION"),
+  actionId: uuid().notNull().references(() => action.id),
   outcome: varchar("text", { enum: ["NOT STARTED", "REQUESTED", "STARTED", "FINISHED"] })
     .notNull()
     .default("NOT STARTED"),
