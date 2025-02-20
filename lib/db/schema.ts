@@ -6,6 +6,7 @@ import {
   json,
   uuid,
   text,
+  integer,
   primaryKey,
   foreignKey,
   boolean,
@@ -122,8 +123,14 @@ export const action = pgTable("Action", {
   id: uuid().primaryKey().notNull().defaultRandom(),
   name: text().notNull(),
   description: text(),
-  connection: text().notNull(),
-  command: text()
+  url: text().notNull(),
+  port: integer(),
+  method: text(),
+  headers: text(),
+  payload: json(),
+  interval: integer(),
+  next_run: timestamp({ mode: "string"}),
+  script: text()
 })
 
 export type Action = InferSelectModel<typeof action>;
