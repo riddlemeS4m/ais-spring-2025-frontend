@@ -9,6 +9,7 @@ import {
   primaryKey,
   foreignKey,
   boolean,
+  integer,
 } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('User', {
@@ -120,3 +121,49 @@ export const ticket = pgTable("Ticket", {
 }
 );
 export type Ticket = InferSelectModel<typeof ticket>;
+
+export const action = pgTable("Action", {
+
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	name: text().notNull(),
+	description: text(),
+	url: text().notNull(),
+	script: text(),
+	port: integer(),
+	method: text(),
+	headers: text(),
+	payload: json(),
+	interval: integer(),
+	nextRun: timestamp("next_run", { mode: 'string' }),
+});
+export type Action = InferSelectModel<typeof history>;
+
+export const history = pgTable("History", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	ticketId: uuid(),
+	chatId: uuid(),
+	executedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+	actionId: uuid().notNull(),
+	text: varchar().default('NOT STARTED').notNull(),
+	details: text().default('None provided'),
+},
+(table) => {
+	return {
+		historyTicketIdTicketIdFk: foreignKey({
+			columns: [table.ticketId],
+			foreignColumns: [ticket.id],
+			name: "History_ticketId_Ticket_id_fk"
+		}),
+		historyChatIdChatIdFk: foreignKey({
+			columns: [table.chatId],
+			foreignColumns: [chat.id],
+			name: "History_chatId_Chat_id_fk"
+		}),
+		historyActionIdActionIdFk: foreignKey({
+			columns: [table.actionId],
+			foreignColumns: [action.id],
+			name: "History_actionId_Action_id_fk"
+		}),
+	}
+});
+export type History = InferSelectModel<typeof history>;

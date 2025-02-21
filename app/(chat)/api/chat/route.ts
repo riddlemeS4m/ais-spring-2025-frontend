@@ -5,17 +5,17 @@ import {
   experimental_generateImage,
   streamObject,
   streamText,
-} from 'ai';
-import { z } from 'zod';
+} from "ai";
+import { z } from "zod";
 
-import { auth } from '@/app/(auth)/auth';
-import { customModel, imageGenerationModel } from '@/lib/ai';
-import { models } from '@/lib/ai/models';
+import { auth } from "@/app/(auth)/auth";
+import { customModel, imageGenerationModel } from "@/lib/ai";
+import { models } from "@/lib/ai/models";
 import {
   codePrompt,
   systemPrompt,
   updateDocumentPrompt,
-} from '@/lib/ai/prompts';
+} from "@/lib/ai/prompts";
 import {
   deleteChatById,
   getChatById,
@@ -24,15 +24,14 @@ import {
   saveDocument,
   saveMessages,
   saveSuggestions,
-} from '@/lib/db/queries';
-import type { Suggestion } from '@/lib/db/schema';
+} from "@/lib/db/queries";
 import {
   generateUUID,
   getMostRecentUserMessage,
   sanitizeResponseMessages,
-} from '@/lib/utils';
+} from "@/lib/utils";
 
-import { generateTitleFromUserMessage } from '../../actions';
+import { generateTitleFromUserMessage } from "../../actions";
 
 export const maxDuration = 60;
 
@@ -40,9 +39,11 @@ type AllowedTools =
   // | 'createDocument'
   // | 'updateDocument'
   // | 'requestSuggestions'
-  | 'getWeather'
-  | 'getPokemon'
-  | 'getInformationAboutIssueAndMakeTicket';
+  | "getWeather"
+  | "getPokemon"
+  | "getSystemInformation"
+  | "getInformationAboutIssueAndMakeTicket";
+import PocketBase from "pocketbase";
 
 // const blocksTools: AllowedTools[] = [
 //   'createDocument',
@@ -50,11 +51,18 @@ type AllowedTools =
 //   'requestSuggestions',
 // ];
 
-const weatherTools: AllowedTools[] = ['getWeather'];
-const pokemonTools: AllowedTools[] = ['getPokemon']
-const serverTools: AllowedTools[] = ['getInformationAboutIssueAndMakeTicket']
+const weatherTools: AllowedTools[] = ["getWeather"];
+const pokemonTools: AllowedTools[] = ["getPokemon"];
+const serverTools: AllowedTools[] = [
+  "getInformationAboutIssueAndMakeTicket",
+  "getSystemInformation",
+];
 
-const allTools: AllowedTools[] = [...weatherTools, ...pokemonTools, ...serverTools];
+const allTools: AllowedTools[] = [
+  ...weatherTools,
+  ...pokemonTools,
+  ...serverTools,
+];
 
 export async function POST(request: Request) {
   const {
@@ -67,20 +75,20 @@ export async function POST(request: Request) {
   const session = await auth();
 
   if (!session || !session.user || !session.user.id) {
-    return new Response('Unauthorized', { status: 401 });
+    return new Response("Unauthorized", { status: 401 });
   }
 
   const model = models.find((model) => model.id === modelId);
 
   if (!model) {
-    return new Response('Model not found', { status: 404 });
+    return new Response("Model not found", { status: 404 });
   }
 
   const coreMessages = convertToCoreMessages(messages);
   const userMessage = getMostRecentUserMessage(coreMessages);
 
   if (!userMessage) {
-    return new Response('No user message found', { status: 400 });
+    return new Response("No user message found", { status: 400 });
   }
 
   const chat = await getChatById({ id });
@@ -101,7 +109,7 @@ export async function POST(request: Request) {
   return createDataStreamResponse({
     execute: (dataStream) => {
       dataStream.writeData({
-        type: 'user-message-id',
+        type: "user-message-id",
         content: userMessageId,
       });
 
@@ -112,8 +120,37 @@ export async function POST(request: Request) {
         maxSteps: 5,
         experimental_activeTools: allTools,
         tools: {
+          getSystemInformation: {
+            description: "get information on a system",
+            parameters: z.object({
+              name: z.string(),
+            }),
+            execute: async ({ name }) => {
+              const pb = new PocketBase(
+                "http://beszel-gwg0cc8844okg0k4co48wkwo.178.156.150.155.sslip.io/"
+              );
+              // console.log(process.env.POCKETBASE_PASSWORD)
+              await pb
+                .collection("users")
+                .authWithPassword(
+                  "hudsonab123@gmail.com",
+                  `${process.env.POCKETBASE_PASSWORD}`
+                );
+
+              // list and filter system records
+
+              const record = await pb.collection("systems").getFullList();
+
+              console.log(record);
+              if (!record) {
+                return { error: "Pokemon not found" };
+              }
+
+              return record;
+            },
+          },
           getPokemon: {
-            description: 'Get information about a specific Pokemon',
+            description: "Get information about a specific Pokemon",
             parameters: z.object({
               name: z.string(),
             }),
@@ -121,48 +158,59 @@ export async function POST(request: Request) {
               const response = await fetch(
                 `https://pokeapi.co/api/v2/pokemon/${name}`
               );
-              
+
               if (!response.ok) {
-                return { error: 'Pokemon not found' };
+                return { error: "Pokemon not found" };
               }
-              
+
               const pokemonData = await response.json();
-              console.log('made it past response.json');
-              console.log(pokemonData)
-              return pokemonData
+              console.log("made it past response.json");
+              console.log(pokemonData);
+              return pokemonData;
             },
           },
-          getInformationAboutIssueAndMakeTicket:{
-            description: 'Help figure out the technical IT problem, such as a server being down, or a CRM issue',
+          getInformationAboutIssueAndMakeTicket: {
+            description:
+              "Help figure out the technical IT problem, such as a server being down, or a CRM issue.",
             parameters: z.object({
-              question: z.string().describe('the problem that is occurring,'),
+              question: z.string().describe("the problem that is occurring,"),
             }),
             execute: async ({ question }) => {
-              console.log(question)
               const response = await fetch(
-                `${process.env.PYTHON_BASE_URL}/jira/ticket`,{
-
-                  body: JSON.stringify({userQuery: question, id: session.user?.id})
+                `${process.env.PYTHON_BASE_URL}/jira/ticket`,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    userQuery: question,
+                    userId: session.user?.id,
+                    severity: "Low",
+                  }),
                 }
               );
-              
+
               if (!response.ok) {
-                return { error: 'Pokemon not found' };
+                const errorData = await response.json();
+                console.error("API Error:", errorData);
+                return { error: "Failed to create ticket", details: errorData };
               }
-              
-              const pokemonData = await response.json();
-              return pokemonData
+
+              const data = await response.json();
+              console.log("API Response:", data);
+              return data;
             },
           },
           getWeather: {
-            description: 'Get the current weather at a location',
+            description: "Get the current weather at a location",
             parameters: z.object({
               latitude: z.number(),
               longitude: z.number(),
             }),
             execute: async ({ latitude, longitude }) => {
               const response = await fetch(
-                `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m&hourly=temperature_2m&daily=sunrise,sunset&timezone=auto`,
+                `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m&hourly=temperature_2m&daily=sunrise,sunset&timezone=auto`
               );
 
               const weatherData = await response.json();
@@ -497,7 +545,7 @@ export async function POST(request: Request) {
                   (message) => {
                     const messageId = generateUUID();
 
-                    if (message.role === 'assistant') {
+                    if (message.role === "assistant") {
                       dataStream.writeMessageAnnotation({
                         messageIdFromServer: messageId,
                       });
@@ -510,17 +558,17 @@ export async function POST(request: Request) {
                       content: message.content,
                       createdAt: new Date(),
                     };
-                  },
+                  }
                 ),
               });
             } catch (error) {
-              console.error('Failed to save chat');
+              console.error("Failed to save chat");
             }
           }
         },
         experimental_telemetry: {
           isEnabled: true,
-          functionId: 'stream-text',
+          functionId: "stream-text",
         },
       });
 
@@ -531,30 +579,30 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);
-  const id = searchParams.get('id');
+  const id = searchParams.get("id");
 
   if (!id) {
-    return new Response('Not Found', { status: 404 });
+    return new Response("Not Found", { status: 404 });
   }
 
   const session = await auth();
 
   if (!session || !session.user) {
-    return new Response('Unauthorized', { status: 401 });
+    return new Response("Unauthorized", { status: 401 });
   }
 
   try {
     const chat = await getChatById({ id });
 
     if (chat.userId !== session.user.id) {
-      return new Response('Unauthorized', { status: 401 });
+      return new Response("Unauthorized", { status: 401 });
     }
 
     await deleteChatById({ id });
 
-    return new Response('Chat deleted', { status: 200 });
+    return new Response("Chat deleted", { status: 200 });
   } catch (error) {
-    return new Response('An error occurred while processing your request', {
+    return new Response("An error occurred while processing your request", {
       status: 500,
     });
   }

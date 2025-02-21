@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, foreignKey, timestamp, text, json, boolean, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, uuid, varchar, foreignKey, timestamp, text, json, boolean, integer, primaryKey } from "drizzle-orm/pg-core"
   import { sql } from "drizzle-orm"
 
 
@@ -45,7 +45,7 @@ export const message = pgTable("Message", {
 });
 
 export const suggestion = pgTable("Suggestion", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().defaultRandom().notNull(),
 	documentId: uuid().notNull(),
 	documentCreatedAt: timestamp({ mode: 'string' }).notNull(),
 	originalText: text().notNull(),
@@ -62,12 +62,71 @@ export const suggestion = pgTable("Suggestion", {
 			foreignColumns: [user.id],
 			name: "Suggestion_userId_User_id_fk"
 		}),
-		suggestionDocumentIdDocumentCreatedAtDocumentIdCreatedAtF: foreignKey({
-			columns: [table.documentId, table.documentCreatedAt],
-			foreignColumns: [document.id, document.createdAt],
-			name: "Suggestion_documentId_documentCreatedAt_Document_id_createdAt_f"
+	}
+});
+
+export const ticket = pgTable("Ticket", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+	userQuery: text().notNull(),
+	severity: text().default('low'),
+	assignedTo: text(),
+	escalationTime: text(),
+	resolved: boolean().default(false),
+	userId: uuid().notNull(),
+	jiraTicketId: text(),
+},
+(table) => {
+	return {
+		ticketUserIdUserIdFk: foreignKey({
+			columns: [table.userId],
+			foreignColumns: [user.id],
+			name: "Ticket_userId_User_id_fk"
 		}),
 	}
+});
+
+export const history = pgTable("History", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	ticketId: uuid(),
+	chatId: uuid(),
+	executedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+	actionId: uuid().notNull(),
+	text: varchar().default('NOT STARTED').notNull(),
+	details: text().default('None provided'),
+},
+(table) => {
+	return {
+		historyTicketIdTicketIdFk: foreignKey({
+			columns: [table.ticketId],
+			foreignColumns: [ticket.id],
+			name: "History_ticketId_Ticket_id_fk"
+		}),
+		historyChatIdChatIdFk: foreignKey({
+			columns: [table.chatId],
+			foreignColumns: [chat.id],
+			name: "History_chatId_Chat_id_fk"
+		}),
+		historyActionIdActionIdFk: foreignKey({
+			columns: [table.actionId],
+			foreignColumns: [action.id],
+			name: "History_actionId_Action_id_fk"
+		}),
+	}
+});
+
+export const action = pgTable("Action", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	name: text().notNull(),
+	description: text(),
+	url: text().notNull(),
+	script: text(),
+	port: integer(),
+	method: text(),
+	headers: text(),
+	payload: json(),
+	interval: integer(),
+	nextRun: timestamp("next_run", { mode: 'string' }),
 });
 
 export const vote = pgTable("Vote", {
@@ -109,25 +168,3 @@ export const document = pgTable("Document", {
 		documentIdCreatedAtPk: primaryKey({ columns: [table.id, table.createdAt], name: "Document_id_createdAt_pk"}),
 	}
 });
-
-export const ticket = pgTable("Ticket", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
-	createdAt: timestamp({ mode: 'string' }).notNull(),
-	jiraTicketId: text(),
-	userQuery: text().notNull(),
-	severity: text().default('low'),
-	assignedTo: text(),
-	escalationTime: text(),
-	resolved: boolean().default(false),
-	userId: uuid().notNull(),
-},
-(table) => {
-	return {
-		ticketUserIdUserIdFk: foreignKey({
-			columns: [table.userId],
-			foreignColumns: [user.id],
-			name: "Ticket_userId_User_id_fk"
-		}),
-	}
-});
-

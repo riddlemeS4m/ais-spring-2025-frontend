@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { user, chat, message, suggestion, document, vote } from "./schema";
+import { user, chat, message, suggestion, vote, document } from "./schema";
 
 export const chatRelations = relations(chat, ({one, many}) => ({
 	user: one(user, {
@@ -29,18 +29,6 @@ export const suggestionRelations = relations(suggestion, ({one}) => ({
 		fields: [suggestion.userId],
 		references: [user.id]
 	}),
-	document: one(document, {
-		fields: [suggestion.documentId],
-		references: [document.id]
-	}),
-}));
-
-export const documentRelations = relations(document, ({one, many}) => ({
-	suggestions: many(suggestion),
-	user: one(user, {
-		fields: [document.userId],
-		references: [user.id]
-	}),
 }));
 
 export const voteRelations = relations(vote, ({one}) => ({
@@ -51,5 +39,12 @@ export const voteRelations = relations(vote, ({one}) => ({
 	message: one(message, {
 		fields: [vote.messageId],
 		references: [message.id]
+	}),
+}));
+
+export const documentRelations = relations(document, ({one}) => ({
+	user: one(user, {
+		fields: [document.userId],
+		references: [user.id]
 	}),
 }));
