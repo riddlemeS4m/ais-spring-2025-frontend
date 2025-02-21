@@ -174,8 +174,9 @@ export async function POST(request: Request) {
               "Help figure out the technical IT problem, such as a server being down, or a CRM issue.",
             parameters: z.object({
               question: z.string().describe("the problem that is occurring,"),
+              severity: z.enum(["Lowest", "Low", "Medium", "High", "Highest"]).describe("the severity of the issue, Low, Medium, High, Critical"),
             }),
-            execute: async ({ question }) => {
+            execute: async ({ question, severity }) => {
               const response = await fetch(
                 `${process.env.PYTHON_BASE_URL}/jira/ticket`,
                 {
@@ -186,7 +187,7 @@ export async function POST(request: Request) {
                   body: JSON.stringify({
                     userQuery: question,
                     userId: session.user?.id,
-                    severity: "Low",
+                    severity: severity,
                   }),
                 }
               );
