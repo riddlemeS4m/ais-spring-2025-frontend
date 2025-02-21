@@ -139,7 +139,7 @@ export async function POST(request: Request) {
 
               // list and filter system records
 
-              const record = await pb.collection("systems").getFullList();
+              const record = await pb.collection("systems").getFirstListItem(`name="${name}"`);
 
               console.log(record);
               if (!record) {
