@@ -21,7 +21,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
 import { PokemonCard } from './pokemon';
-
+import { SystemInfoCard } from './system-info';
 const PurePreviewMessage = ({
   chatId,
   message,
@@ -142,6 +142,8 @@ const PurePreviewMessage = ({
                           <PokemonCard pokemonInfo={result} />
                         )  : toolName === 'getInformationAboutIssueAndMakeTicket' ? (
                           <JiraTicketInfo ticket={result} />
+                        )  : toolName === 'getSystemInformation' ? (
+                          <SystemInfoCard system={result} />
                         )  : (
                           <pre>{JSON.stringify(result, null, 2)}</pre>
                         )}
