@@ -137,7 +137,7 @@ export async function POST(request: Request) {
                   `${process.env.POCKETBASE_PASSWORD}`
                 );
 
-              // list and filter system records
+              // list and filter system records twice
 
               const record = await pb.collection("systems").getFirstListItem(`name="${name}"`);
 
