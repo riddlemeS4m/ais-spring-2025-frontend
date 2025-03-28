@@ -69,7 +69,7 @@ export function ConfirmAction({
 
         if (response.ok) {
           toast(
-            "The command went through, give it a second to reflect in the pertinent issue"
+            "The command went through! Give it a second to reflect in the pertinent issue"
           );
         }
 

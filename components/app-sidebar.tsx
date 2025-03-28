@@ -38,6 +38,18 @@ export function AppSidebar({ user }: { user: User | undefined }) {
               Beacon
               </span>
             </Link>
+            <div>|</div>
+            <Link
+              href="/tasks"
+              onClick={() => {
+                setOpenMobile(false);
+              }}
+              className="flex flex-row gap-3 items-center"
+            >
+              <span className="text-xl font-semibold px-2 hover:bg-muted rounded-md cursor-pointer">
+                Tasks
+              </span>
+            </Link>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

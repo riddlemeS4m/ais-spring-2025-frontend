@@ -748,6 +748,7 @@ export const SidebarLeftIcon = ({ size = 16 }: { size?: number }) => (
 
 export const PlusIcon = ({ size = 16 }: { size?: number }) => (
   <svg
+  suppressHydrationWarning
     height={size}
     strokeLinejoin="round"
     viewBox="0 0 16 16"
