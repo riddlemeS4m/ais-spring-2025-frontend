@@ -22,6 +22,7 @@ import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
 import { PokemonCard } from './pokemon';
 import { SystemInfoCard } from './system-info';
+import { ConfirmAction } from './confirmAction';
 const PurePreviewMessage = ({
   chatId,
   message,
@@ -133,7 +134,7 @@ const PurePreviewMessage = ({
 
                   if (state === 'result') {
                     const { result } = toolInvocation;
-
+                    console.log('result' + result.id)
                     return (
                       <div key={toolCallId}>
                         {toolName === 'getWeather' ? (
@@ -141,7 +142,7 @@ const PurePreviewMessage = ({
                         ) : toolName === 'getPokemon' ? (
                           <PokemonCard pokemonInfo={result} />
                         )  : toolName === 'getInformationAboutIssueAndMakeTicket' ? (
-                          <JiraTicketInfo ticket={result} />
+                          <ConfirmAction  actionId={result.id} command={result.script} description={result.description} apiEndpoint={"https://aisapi.andrewbhudson.dev"} />
                         )  : toolName === 'getSystemInformation' ? (
                           <SystemInfoCard system={result} />
                         )  : (

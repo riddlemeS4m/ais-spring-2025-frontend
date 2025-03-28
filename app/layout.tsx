@@ -7,8 +7,8 @@ import './globals.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://chat.andrewbhudson.dev'),
-  title: 'andrews nice chatbot',
-  description: 'andrews nice chatbot',
+  title: 'Beacon',
+  description: 'Beacon',
 };
 
 export const viewport = {
