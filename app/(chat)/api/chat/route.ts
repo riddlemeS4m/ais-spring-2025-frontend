@@ -44,6 +44,8 @@ type AllowedTools =
   | "getSystemInformation"
   | "getInformationAboutIssueAndMakeTicket";
 import PocketBase from "pocketbase";
+import { ConfirmAction } from "@/components/confirmAction";
+import { action } from "@/lib/db/schema";
 
 // const blocksTools: AllowedTools[] = [
 //   'createDocument',
@@ -177,8 +179,9 @@ export async function POST(request: Request) {
               severity: z.enum(["Lowest", "Low", "Medium", "High", "Highest"]).describe("the severity of the issue, Low, Medium, High, Critical"),
             }),
             execute: async ({ question, severity }) => {
-              const response = await fetch(
-                `${process.env.PYTHON_BASE_URL}/jira/ticket`,
+              console.log('here')
+              const actionResponse = await fetch(
+                `${process.env.PYTHON_BASE_URL}/recommend-action/`,
                 {
                   method: "POST",
                   headers: {
@@ -186,21 +189,39 @@ export async function POST(request: Request) {
                   },
                   body: JSON.stringify({
                     userQuery: question,
-                    userId: session.user?.id,
-                    severity: severity,
+                    userId: "",
+                    severity: "",
                   }),
                 }
               );
+              const data = await actionResponse.json()
+              // // const response = await fetch(
+              // //   `${process.env.PYTHON_BASE_URL}/jira/ticket`,
+              // //   {
+              // //     method: "POST",
+              // //     headers: {
+              // //       "Content-Type": "application/json",
+              // //     },
+              // //     body: JSON.stringify({
+              // //       userQuery: question,
+              // //       userId: session.user?.id,
+              // //       severity: severity,
+              // //     }),
+              // //   }
+              // // );
 
-              if (!response.ok) {
-                const errorData = await response.json();
-                console.error("API Error:", errorData);
-                return { error: "Failed to create ticket", details: errorData };
-              }
+              // if (!response.ok) {
+              //   const errorData = await response.json();
+              //   console.error("API Error:", errorData);
+              //   return { error: "Failed to create ticket", details: errorData };
+              // }
 
-              const data = await response.json();
-              console.log("API Response:", data);
-              return data;
+              // const data = await response.json();
+              console.log("API Response:", data[0]);
+              data[0].question = question;
+              data[0].severity = severity;
+              data[0].userId = session.user?.id
+              return data[0]
             },
           },
           getWeather: {
