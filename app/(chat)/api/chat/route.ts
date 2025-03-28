@@ -218,7 +218,9 @@ export async function POST(request: Request) {
 
               // const data = await response.json();
               console.log("API Response:", data[0]);
-
+              data[0].question = question;
+              data[0].severity = severity;
+              data[0].userId = session.user?.id
               return data[0]
             },
           },

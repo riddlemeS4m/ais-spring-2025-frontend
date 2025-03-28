@@ -142,7 +142,7 @@ const PurePreviewMessage = ({
                         ) : toolName === 'getPokemon' ? (
                           <PokemonCard pokemonInfo={result} />
                         )  : toolName === 'getInformationAboutIssueAndMakeTicket' ? (
-                          <ConfirmAction  actionId={result.id} command={result.script} description={result.description} apiEndpoint={"https://aisapi.andrewbhudson.dev"} />
+                          <ConfirmAction question={result.question} severity={result.severity} userId={result.userId} actionId={result.id} command={result.script} description={result.description} apiEndpoint={"https://aisapi.andrewbhudson.dev"} />
                         )  : toolName === 'getSystemInformation' ? (
                           <SystemInfoCard system={result} />
                         )  : (
